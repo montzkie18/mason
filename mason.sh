@@ -717,15 +717,15 @@ function mason_publish {
         exit 1
     fi
 
-    if [ -z "${AWS_ACCESS_KEY_ID}" ]; then
-        mason_error "AWS_ACCESS_KEY_ID is not set."
-        exit 1
-    fi
+    # if [ -z "${AWS_ACCESS_KEY_ID}" ]; then
+    #     mason_error "AWS_ACCESS_KEY_ID is not set."
+    #     exit 1
+    # fi
 
-    if [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
-        mason_error "AWS_SECRET_ACCESS_KEY is not set."
-        exit 1
-    fi
+    # if [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+    #     mason_error "AWS_SECRET_ACCESS_KEY is not set."
+    #     exit 1
+    # fi
 
     mkdir -p "$(dirname ${MASON_BINARIES_PATH})"
     cd "${MASON_PREFIX}"
@@ -735,16 +735,23 @@ function mason_publish {
     mason_step "Uploading binary package..."
 
     CONTENT_TYPE="application/octet-stream"
-    DATE="$(LC_ALL=C date -u +"%a, %d %b %Y %X %z")"
-    MD5="$(openssl md5 -binary < "${MASON_BINARIES_PATH}" | base64)"
-    SIGNATURE="$(printf "PUT\n$MD5\n$CONTENT_TYPE\n$DATE\nx-amz-acl:public-read\n/${MASON_BUCKET}/${MASON_BINARIES}" | openssl sha1 -binary -hmac "$AWS_SECRET_ACCESS_KEY" | base64)"
+    # DATE="$(LC_ALL=C date -u +"%a, %d %b %Y %X %z")"
+    # MD5="$(openssl md5 -binary < "${MASON_BINARIES_PATH}" | base64)"
+    # SIGNATURE="$(printf "PUT\n$MD5\n$CONTENT_TYPE\n$DATE\nx-amz-acl:public-read\n/${MASON_BUCKET}/${MASON_BINARIES}" | openssl sha1 -binary -hmac "$AWS_SECRET_ACCESS_KEY" | base64)"
 
-    curl -S -T "${MASON_BINARIES_PATH}" "${MASON_BINARIES_URL}" \
-        -H "Date: $DATE" \
-        -H "Authorization: AWS $AWS_ACCESS_KEY_ID:$SIGNATURE" \
+    # curl -S -T "${MASON_BINARIES_PATH}" "${MASON_BINARIES_URL}" \
+    #     -H "Date: $DATE" \
+    #     -H "Authorization: AWS $AWS_ACCESS_KEY_ID:$SIGNATURE" \
+    #     -H "Content-Type: $CONTENT_TYPE" \
+    #     -H "Content-MD5: $MD5" \
+    #     -H "x-amz-acl: public-read"
+
+    GITHUB_ASSET_NAME=${MASON_PLATFORM_ID}-${MASON_NAME}-${MASON_VERSION}.tar.gz
+    curl \
+        -H "Authorization: token $GITHUB_TOKEN" \
         -H "Content-Type: $CONTENT_TYPE" \
-        -H "Content-MD5: $MD5" \
-        -H "x-amz-acl: public-read"
+        --data-binary @$MASON_BINARIES_PATH \
+        "https://uploads.github.com/repos/montzkie18/mapnik/releases/43054505/assets?name=$GITHUB_ASSET_NAME"
 
     echo "${MASON_BINARIES_URL}"
     curl -f -I "${MASON_BINARIES_URL}"
